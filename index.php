@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'conexion.php'; // Conectamos a la BD
+require_once 'conexion.php'; 
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -8,25 +8,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
 
     try {
-        // Buscamos al usuario en la BD
         $stmt = $pdo->prepare("SELECT id, nombre, password, rol FROM usuarios WHERE username = :username AND estado = 1");
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch();
 
-        // Verificamos si existe el usuario y si la contraseña coincide con el hash
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['logged_in'] = true;
             $_SESSION['usuario_id'] = $user['id'];
             $_SESSION['user'] = $user['nombre'];
             $_SESSION['role'] = $user['rol'];
-            
             header("Location: dashboard.php");
             exit();
         } else {
-            $error = 'Credenciales incorrectas. Por favor, verifica tus datos.';
+            $error = 'Credenciales incorrectas.';
         }
     } catch (PDOException $e) {
-        $error = "Error de base de datos: " . $e->getMessage();
+        $error = "Error de conexión.";
     }
 }
 ?>
@@ -35,238 +32,201 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Sistema POS - FercitoDev</title>
+    <title>Acceso POS Premium | FercitoDev</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #f1f5f9;
-            --card-bg: #ffffff;
+            --primary-formal: #1e293b; /* Color oscuro profesional */
+            --bg-light: #f8fafc;     /* Fondo gris ultra claro */
             --text-main: #0f172a;
             --text-muted: #64748b;
-            --accent: #0ea5e9;
-            --accent-hover: #0284c7;
-            --error-color: #ef4444;
-            --demo-bg: #e0f2fe;
-            --demo-border: #bae6fd;
-            --demo-text: #0369a1;
+            --border: #e2e8f0;
+            --accent-glow: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(248,250,252,0) 70%); /* Resalte suave */
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { height: 100vh; display: flex; background-color: #fff; overflow: hidden; }
 
-        body {
-            background-color: var(--bg-color);
-            min-height: 100vh;
+        /* LADO IZQUIERDO: INFO PANEL REDISEÑADO */
+        .info-panel {
+            flex: 1.2;
+            background-color: var(--bg-light);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .login-container {
-            background: var(--card-bg);
-            width: 100%;
-            max-width: 420px;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .login-header i {
-            font-size: 3rem;
-            color: var(--accent);
-            margin-bottom: 10px;
-            display: inline-block;
-        }
-
-        .login-header h1 {
-            font-size: 1.5rem;
-            color: var(--text-main);
-            font-weight: 800;
-        }
-
-        .login-header p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-top: 5px;
-        }
-
-        /* Caja de Información de la Demo */
-        .demo-alert {
-            background-color: var(--demo-bg);
-            border: 1px solid var(--demo-border);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 25px;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
-
-        .demo-alert i {
-            color: var(--accent);
-            font-size: 1.2rem;
-            margin-top: 2px;
-        }
-
-        .demo-alert-content h4 {
-            color: var(--demo-text);
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-        }
-
-        .demo-alert-content p {
-            color: var(--demo-text);
-            font-size: 0.85rem;
-            line-height: 1.4;
-        }
-
-        .demo-alert-content strong {
-            background: rgba(255,255,255,0.6);
-            padding: 2px 6px;
-            border-radius: 4px;
-            letter-spacing: 0.5px;
-        }
-
-        /* Formulario */
-        .form-group {
-            margin-bottom: 20px;
+            flex-direction: column;
+            justify-content: space-between; /* Logo arriba, info/imagen centro, copyright abajo */
+            padding: 5rem;
+            border-right: 1px solid var(--border);
             position: relative;
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-main);
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px 15px 12px 40px;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            outline: none;
-        }
-
-        .form-control:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
-        }
-
-        .form-icon {
+        /* RESALTE MODERNO PARA EL LOGO */
+        .logo-resaltado-wrapper {
             position: absolute;
-            bottom: 12px;
-            left: 15px;
-            color: var(--text-muted);
-            font-size: 1.1rem;
+            top: 5rem;
+            left: 5rem;
+            width: fit-content;
+            height: fit-content;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        /* Contenedor con brillo suave */
+        .logo-resaltado-wrapper::before {
+            content: '';
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            z-index: -1;
+            transform: translate(-50px, -50px);
         }
 
-        .btn-login {
+        .brand-logo-img {
+            height: 60px; /* ¡MUCHO MÁS GRANDE! (Ajusta si necesitas) */
+            width: auto;
+            display: block;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.06)); /* Sombra suave para profundidad */
+            transition: all 0.3s ease;
+        }
+
+        /* INFO CONTENT CENTRADO */
+        .info-content-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex-grow: 1;
+            margin-top: 8rem; /* Espacio para el logo */
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            color: var(--text-main);
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-title br { display: block; content: ""; margin-top: 10px; } /* Ajuste interlineado manual */
+
+        .hero-desc {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 450px;
+            line-height: 1.6;
+            margin-bottom: 3rem; /* Espacio antes de la imagen */
+        }
+
+        /* NUEVA IMAGEN DE INVENTARIO */
+        .info-image-container {
             width: 100%;
-            padding: 14px;
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
+            max-width: 500px;
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin-top: 10px;
         }
 
-        .btn-login:hover {
-            background-color: var(--accent-hover);
+        .info-image-src {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 12px; /* Toque suave */
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.04)); /* Profundidad */
         }
 
-        .error-message {
-            color: var(--error-color);
-            background-color: #fef2f2;
-            border: 1px solid #fecaca;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            text-align: center;
-            margin-bottom: 20px;
-            display: <?php echo $error ? 'block' : 'none'; ?>;
+        /* COPYRIGHT ABAJO */
+        .copyright-container {
+            padding-top: 2rem;
         }
 
-        .footer-text {
-            text-align: center;
-            margin-top: 25px;
+        .copyright-text {
             font-size: 0.8rem;
             color: var(--text-muted);
         }
 
-        .footer-text a {
-            color: var(--accent);
-            text-decoration: none;
-            font-weight: 600;
+        /* LADO DERECHO: LOGIN PANEL */
+        .login-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 3rem; }
+        .form-container { width: 100%; max-width: 400px; }
+        .login-title { margin-bottom: 2rem; }
+        .login-title h2 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .login-title p { color: var(--text-muted); font-size: 0.95rem; }
+
+        /* DEMO INFO */
+        .demo-info { background-color: #f1f5f9; border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; border: 1px solid var(--border); }
+        .demo-info span { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
+        .demo-info p { font-size: 0.9rem; color: var(--text-main); }
+        .demo-info strong { color: var(--primary-formal); background: #fff; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); font-family: monospace; }
+
+        /* FORMULARIO */
+        .input-group { margin-bottom: 1.5rem; }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
+        .input-group input { width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); background-color: var(--bg-light); font-size: 0.95rem; transition: all 0.2s; }
+        .input-group input:focus { outline: none; border-color: var(--primary-formal); background-color: #fff; box-shadow: 0 0 0 4px rgba(30, 41, 59, 0.05); }
+        .btn-login { width: 100%; padding: 14px; background-color: var(--primary-formal); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-top: 1rem; }
+        .btn-login:hover { opacity: 0.9; }
+        .error-box { background-color: #fef2f2; color: #b91c1c; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.5rem; border: 1px solid #fee2e2; display: <?php echo $error ? 'block' : 'none'; ?>; }
+        .footer-link { text-align: center; margin-top: 2.5rem; font-size: 0.85rem; color: var(--text-muted); }
+        .footer-link a { color: var(--primary-formal); text-decoration: none; font-weight: 600; }
+
+        /* RESPONSIVO MÓVIL */
+        @media (max-width: 1024px) {
+            .info-panel { display: none; }
+            body { background-color: var(--bg-light); justify-content: center; align-items: center; overflow: auto; padding: 2rem;}
+            .login-panel { background: #fff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-height: fit-content; padding: 4rem 2rem;}
         }
     </style>
 </head>
 <body>
 
-    <div class="login-container">
-        <div class="login-header">
-            <i class="ri-store-2-line"></i>
-            <h1>Sistema POS</h1>
-            <p>Gestión de Punto de Venta</p>
+    <div class="info-panel">
+        
+        <div class="logo-resaltado-wrapper">
+            <img src="img/fercitodev.png" alt="POS FercitoDev Logo" class="brand-logo-img">
         </div>
-
-        <div class="error-message">
-            <i class="ri-error-warning-line"></i> <?php echo $error; ?>
-        </div>
-
-        <div class="demo-alert">
-            <i class="ri-information-fill"></i>
-            <div class="demo-alert-content">
-                <h4>¿Quieres ver una demostración?</h4>
-                <p>Ingresa como espectador usando las siguientes credenciales de prueba:<br>
-                Usuario: <strong>vistaprevia</strong><br>
-                Contraseña: <strong>vistaprevia</strong></p>
+        
+        <div class="info-content-container">
+            <h1 class="hero-title">Gestión integral para<br>negocios modernos.</h1>
+            <p class="hero-desc">Optimiza tus ventas, monitorea inventarios en tiempo real y toma decisiones basadas en datos con nuestra plataforma POS de alto rendimiento.</p>
+            
+            <div class="info-image-container">
+                <img src="img/inventario.png" alt="Previsualización Inventario POS" class="info-image-src">
             </div>
         </div>
+        
+        <div class="copyright-container">
+            <p class="copyright-text">© 2026 FercitoDev. Todos los derechos reservados.</p>
+        </div>
+    </div>
 
-        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
-            <div class="form-group">
-                <label for="username">Usuario</label>
-                <i class="ri-user-3-line form-icon"></i>
-                <input type="text" id="username" name="username" class="form-control" placeholder="Ingresa tu usuario" required autocomplete="off">
+    <div class="login-panel">
+        <div class="form-container">
+            <div class="login-title">
+                <h2>Iniciar sesión</h2>
+                <p>Ingresa tus datos para gestionar tu negocio.</p>
             </div>
-
-            <div class="form-group">
-                <label for="password">Contraseña</label>
-                <i class="ri-lock-password-line form-icon"></i>
-                <input type="password" id="password" name="password" class="form-control" placeholder="Ingresa tu contraseña" required>
+            <div class="error-box"><?php echo $error; ?></div>
+            <div class="demo-info">
+                <span>Acceso de Prueba</span>
+                <p>Usuario: <strong>vistaprevia</strong> | Clave: <strong>vistaprevia</strong></p>
             </div>
-
-            <button type="submit" class="btn-login">
-                Ingresar al Sistema <i class="ri-login-circle-line"></i>
-            </button>
-        </form>
-
-        <div class="footer-text">
-            ¿Necesitas tu propio sistema? <br>
-            <a href="https://fercitodev.com" target="_blank">Contacta a FercitoDev.com</a>
+            <form method="POST">
+                <div class="input-group">
+                    <label>Usuario</label>
+                    <input type="text" name="username" placeholder="Tu nombre de usuario" required>
+                </div>
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <input type="password" name="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-login">Acceder al Sistema</button>
+            </form>
+            <div class="footer-link">
+                ¿Necesitas soporte técnico? <br>
+                <a href="https://fercitodev.com" target="_blank">Contactar a FercitoDev</a>
+            </div>
         </div>
     </div>
 
